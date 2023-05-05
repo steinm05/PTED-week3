@@ -1,0 +1,187 @@
+---
+title: "r exercise 3"
+format: html
+---
+
+Delete R memory
+```{r}
+rm(list=ls())
+
+```
+
+#Demo Week 3
+## Libraries
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(terra)
+library(tmap)
+library(gitcreds)
+library(dplyr)
+
+```
+
+
+```{r}
+
+ww <- read_csv("wildschwein_BE_2056.csv")
+View(ww)
+
+
+#ww <- st_as_sf(ww, coords = c("E", "N"), crs = 2056, remove = FALSE)
+
+```
+
+
+```{r}
+ww$TierName |> 
+  unique()
+
+
+sabi <- ww |> 
+  filter(ww$TierName == "Sabi") |> 
+  filter(DatetimeUTC >= "2015-07-01", DatetimeUTC < "2015-07-03")
+
+```
+
+
+```{r}
+ggplot(sabi, aes(E,N))+
+  geom_point()+
+  geom_path()
+
+```
+
+
+```{r}
+ggplot(sabi, aes(E,N, colour = DatetimeUTC))+
+  geom_point()+
+  geom_path()+
+  coord_equal()
+
+```
+
+
+```{r}
+
+
+
+sabi |> 
+  head(50) |> 
+  ggplot(DatetimeUTC, 1)+
+  geom_point()
+#error DatetimeUTC not found... ??
+
+
+
+sabi |> 
+  mutate(
+    stepLength = sqrt((lead(E)-E)^2 + (lead(N)-N)^2)
+  )
+
+
+```
+
+```{r}
+sabi <- sabi |> 
+  mutate(
+    n_plus1 = sqrt((lead(E,1)-E)^2 + (lead(N,1)-N)^2), 
+    n_plus2 = sqrt((lead(E,2)-E)^2 + (lead(N,2)-N)^2),
+    n_minus1 = sqrt((lag(E)-E)^2 + (lag(N)-N)^2), #N,1 ist sowieso default, also bis zum nächsten Zeitschritt
+    n_minus2 = sqrt((lag(E,2)-E)^2 + (lag(N,2)-N)^2)
+  )
+
+tail(sabi)
+
+```
+
+
+```{r}
+sabi |> 
+  mutate(
+    stepMean = mean(c(n_minus1, n_minus2, n_plus1, n_plus2), na.rm = T)
+  )
+
+
+sabi <- sabi |> 
+  rowwise() |> 
+  mutate(
+    stepMean = mean(c(n_minus1, n_minus2, n_plus1, n_plus2))
+  ) |> 
+  ungroup()
+
+```
+
+
+```{r}
+
+ggplot(sabi, aes(stepMean))+
+  geom_histogram(binwidth = 10)+
+  geom_vline(xintercept = mean(sabi$stepMean, na.rm=T))
+
+```
+
+```{r}
+sabi <- sabi |> 
+  mutate(static = stepMean < mean(stepMean, na.rm = T))
+  
+ggplot(sabi, aes(E, N))+
+  geom_point(color = static)+
+  geom_path()+
+  coord_fixed()
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
